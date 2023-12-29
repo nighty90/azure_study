@@ -6,6 +6,7 @@
 
 + 注意实际输入给 GPT 模型的 prompt 是包含一定量的上下文的
 + `max_token` 指示了向模型申请的计算资源的大小，因此是计费的依据
++ embedding 模型输出的维度为 1536
 
 
 
@@ -225,9 +226,9 @@ POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deploymen
 POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deployment-id}/chat/completions?api-version={api-version}
 ```
 
-+ 路径参数：同 Completions
++ URL 路径要素与参数：同 Completions
 
-+ request 内容：基本同 Completions，以下列出不同点
++ 请求体：基本同 Completions，以下列出不同点
 
   + 没有 `prompt`，而是使用 `messages`
     + array，元素为 [chat message](#ChatMessage)，必须，输入给模型的一系列上下文
@@ -239,6 +240,7 @@ POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deploymen
     + 需要 API 版本为 2023-07-01-preview，且非所有模型都支持
   + `functions`：FunctionDefinition[]，非必须，一系列可供调用的函数，其输入由模型生成
     + 需要 API 版本为 2023-07-01-preview
+  + 对于 2023
   + 其他没有的参数：suffix、echo、best_of
 
 + 相关数据类型（JSON 格式）
@@ -282,13 +284,21 @@ POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deploymen
 
 ## Python SDK
 
-本质上是对 REST API 的调用做了包装，因此还是以参考 REST API 为主
+### Overview
+
++ 本质上是对 REST API 的调用做了包装，因此还是以参考 REST API 为主
++ 注意虽然调用的是 AOAI 服务，但调用的库是 openai 提供的
++ openai 0.x 和 openai 1.x 之间差别较大，注意搞清版本
+
+
 
 
 
 ## Add your data
 
-mongodb
+### mongodb
+
++ 本质是将
 
 
 
