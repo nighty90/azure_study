@@ -6,7 +6,12 @@
 
 + 注意实际输入给 GPT 模型的 prompt 是包含一定量的上下文的
 + `max_token` 指示了向模型申请的计算资源的大小，因此是计费的依据
+  + 具体模型的限制见文档
+
 + embedding 模型输出的维度为 1536
++ 关于 GPT-4 的地区支持性，注意部分列出的地区仅能使用已创建的 GPT-4 部署
+  + 无法新建也无法编辑
+
 
 
 
@@ -145,31 +150,47 @@
 
 
 
-### Completions
+### Chat completions
+
+聊天补完，目前使用最多的 API，相关模型为 GPT 系列模型
 
 ```http
-POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deployment-id}/completions?api-version={api-version}
+POST {endpoint}/openai/deployments/{deploy_name}/chat/completions?api-version={api-version}
 ```
 
-+ URL 路径要素
+#### 属性适用情况
 
-  + `your-resource-name`：AOAI 资源的名称
-  + `deployment-id`：部署了对应模型的 deployment 的名称
+注意不是所有模型都适用所有属性，文档里写的也不清楚，尽量自己实测
 
-+ URL 参数
+文档中说明的不适用：
 
-  + `api-version`：API 的版本，具体见文档
++  gpt-35-turbo：`echo`, `logprobs`
 
-+ 请求体
+目前测试出的不适用：
 
-  + `prompt`：string / array，输入模型的 prompt
-    + 默认值为 `<\|endoftext\|>`，此时模型认为要为空白的新文档生成文本
-  + `max_tokens`：integer，补全的最大 token 数
++ gpt-4-0613：`tools`
+
+
+
+#### 请求体
+
++ prompt，必须
+  + `messages`：array，输入给模型的一系列上下文
+    + message 元素形式： `{"role": "role gives the message"，"message": "The acutall message"}`
+    + 注意通常不仅包括用户该次发送的信息
++ 生成设置
+  + `max_tokens`：integer，补全的最大 token 数，**常用属性**
     + 本质上请求了需要占用的计算资源，是实际计算使用的 token 数的依据
     + 当该值较大时，模型延迟也会较大
-    + 注意 [ prompt 长度 + max_tokens ] 不能超过模型 context 长度
-    + context 长度通常为2048，新模型为 4096
-    + 默认
+    + 注意 [ messages 长度 + max_tokens ] 不能超过模型 context 长度
+  + `n`：integer，各 prompt 生成的补全数量，默认为 1
+    + 注意会大量消耗 token 配额，请确保已正确设置 `max_tokens` 和 `stop`
+  + `stream`：boolean，是否以数据流的形式返回，默认为 False，**常用属性**
+    + 一旦 token 可用便会以仅含数据的 event 的形式发送，直到遇到 `data: [DONE]`
+  + `logprobs`：integer，设置每个位置返回的最可能的 token 个数，默认为 null
+    + 仅当不为 null 时启用，返回的 response 里也包含每个 token 的对数概率
+  + `stop`：string / array，设置终止信号（不包含在输出中），长度最多为 4，默认为 null
++ token采样
   + `temperature`：number，采样温度，范围为 0 - 2，默认为 1
     + 数值越低，模型就越会选择概率高的 token，为 0 时模型只输出概率最大的 token
     + 不推荐同时改变该参数与 `top_p`
@@ -180,121 +201,216 @@ POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deploymen
     + 可接收 json 对象，将 token 映射为对应偏置值
     + 这里 token 具体来说指的是 GPT tokenizer 给出的 token ID
     + 偏置值范围为 -100 - 100，在采样前被加到模型生成的 logits 上
-  + `user`：string，终端用户的标识符，可用于监测滥用情况，默认为空
-  + `n`：integer，各 prompt 生成的补全数量，默认为 1
-    + 注意会大量消耗 token 配额，请确保已正确设置 `max_tokens` 和 `stop`
-  + `stream`：boolean，是否以数据流的形式返回，默认为 False
-    + 一旦 token 可用便会以仅含数据的 event 的形式发送，直到遇到 `data: [DONE]`
-  + `logprobs`：integer，设置每个位置返回的最可能的 token 个数，默认为 null
-    + 仅当不为 null 时启用，返回的 response 里也包含每个 token 的对数概率
-    + 该参数不适用于 `gpt-35-turbo`
-  + `suffix`：string，补全的后缀，默认为 null
-  + `echo`：boolean，是否也输出 prompt，默认为 False
-    + 该参数不适用于 `gpt-35-turbo`
-  + `stop`：string / array，设置终止信号（不包含在输出中），长度最多为 4，默认为 null
   + `presence_penalty`：number，根据是否已出现惩罚 token，范围为 -2.0 - 2.0，默认为 0
     + 注意正值为惩罚，负值为鼓励
   + `frequency_penalty`：number，根据频率惩罚 token，范围为 -2.0 - 2.0，默认为 0
     + 注意正值为惩罚，负值为鼓励
-  + `best_of`：integer，设置服务器端生成的补全个数，默认为 1
-    + 注意仅返回最佳补全，即平均 token 对数概率最低的补全
-    + 无法与 `stream` 同用
-    + 与 n 同用时，注意 `best_of` 一定要大于 n
-    + 注意 token 配额的消耗
-    + 该参数不适用于 `gpt-35-turbo`
-
-  
-
-### Embeddings
-
-```http
-POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deployment-id}/embeddings?api-version={api-version}
-```
-
-+ URL 路径要素及参数：同 Completions
-+ 请求体
-  + `input`：string / array，必须参数，需要编码的文本
-    + 支持的 token 数因模型而异
-    + 仅 `text-embedding-ada-002 (Version 2)` 支持 array 输入
-  + `user`：同 Completions，注意不要传递 PII 标识符，请使用伪匿名化值，如 GUID
-
-
-
-### Chat completions
-
-```http
-POST https://{your-resource-name}.openai.azure.com/openai/deployments/{deployment-id}/chat/completions?api-version={api-version}
-```
-
-+ URL 路径要素与参数：同 Completions
-
-+ 请求体：基本同 Completions，以下列出不同点
-
-  + 没有 `prompt`，而是使用 `messages`
-    + array，元素为 [chat message](#ChatMessage)，必须，输入给模型的一系列上下文
-  + `max_tokens` 默认为 inf，此时实际上能返回的最多 token 数 = 4069 - prompt 的 token数
++ 元信息
+  + `user`：string，终端用户的标识符，可用于监测滥用情况，默认为空
++ 函数调用
   + `function_call`：非必须，控制模型对函数的调用情况
     + "none"：模型不调用函数，回复终端用户，未提供 functions 参数时该值为默认值
     + "auto"：模型可回复终端用户或调用函数，提供了 functions 参数时该值为默认值
     + 以 `{"name": "my_function"}` 的形式指定函数：要求模型必须调用该函数
-    + 需要 API 版本为 2023-07-01-preview，且非所有模型都支持
   + `functions`：FunctionDefinition[]，非必须，一系列可供调用的函数，其输入由模型生成
-    + 需要 API 版本为 2023-07-01-preview
-  + 对于 2023
-  + 其他没有的参数：suffix、echo、best_of
-
-+ 相关数据类型（JSON 格式）
-
-  + **ChatMessage**
-
-    | Name          | Type         | Required | Description                                                  |
-    | :------------ | :----------- | -------- | :----------------------------------------------------------- |
-    | content       | string       | required | 该 message 的内容                                            |
-    | function_call | FunctionCall | optional | 需要调用的函数及其参数                                       |
-    | name          | string       | optional | 该 message 作者的名字； <br>如果 role 为 function 则必须提供，值为对应的函数名； <br>最长 64 字符 |
-    | role          | ChatRole     | required | 该 message 的 role                                           |
-
-  + **ChatRole**（四选一）
-
-    + assistant：提供回复
-    + function：提供函数的调用结果
-    + system：指示或设置 assistant 的行为
-    + user：提供 prompt 输入
-
-  + **FunctionCall**（注意需要 API version 为 2023-07-01-preview）
-
-    | Name      | Type   | Description                                                  |
-    | :-------- | :----- | :----------------------------------------------------------- |
-    | arguments | string | 调用函数所需的参数，由模型以 JSON 格式生成； <br>注意模型不一定能生成合法参数，调用前需要注意检查 |
-    | name      | string | 需要调用的函数名                                             |
-
-  + **FunctionDefinition**（注意需要 API version 为 2023-07-01-preview）
-
-    | Name        | Type   | Description                                  |
-    | :---------- | :----- | :------------------------------------------- |
-    | description | string | 描述函数功能，是模型选择函数及生成参数的依据 |
-    | name        | string | 函数名                                       |
-    | parameters  |        | 函数的参数，以 JSON 格式提供                 |
 
 
 
-#### 
+### Completions
+
+文本补全，用例为续写故事，相关模型为 GPT 系列；使用较少
+
+```http
+POST {endpoint}/openai/deployments/{deploy_name}/completions?api-version={api-version}
+```
+
+请求体基本与 Chat completion 相同，这里仅列出不同
+
++ 使用 `prompt` 而非 `message`
+  + 默认值为 `<\|endoftext\|>`，此时模型认为要为空白的新文档生成文本
++ `suffix`：string，补全的后缀，默认为 null
++ `echo`：boolean，是否也输出 prompt，默认为 False
++ `best_of`：integer，设置服务器端生成的补全个数，默认为 1
+  + 注意仅返回最佳补全，即平均 token 对数概率最低的补全
+  + 无法与 `stream` 同用
+  + 与 n 同用时，注意 `best_of` 一定要大于 n
+  + 注意 token 配额的消耗
+  + 该参数不适用于 `gpt-35-turbo`
 
 
 
-## Python SDK
+### Embeddings
+
+对文本进行编码，可将不等长的文本全部编码为 1536 维的向量，主要用于通过计算相似性搜索与 query 相近的文本
+
+```http
+POST {endpoint}/openai/deployments/{deploy_name}/embeddings?api-version={api-version}
+```
+
+注意模型需要是 embedding 模型
+
++ `input`：string / array，必须参数，需要编码的文本
+  + 支持的 token 数因模型而异
+  + 仅 `text-embedding-ada-002 (Version 2)` 支持 array 输入
++ `user`：同 Completions，注意不要传递 PII 标识符，请使用伪匿名化值，如 GUID
+
+
+
+### Completions extensions
+
+对于 chat completions 的扩展，可应用更多 Azure OpenAI 提供的功能，如 add your data
+
+```http
+POST {endpoint}/openai/deployments/{deploy_name}/extensions/chat/completions?api-version={api-version}
+```
+
+请求体基本同 Chat completions，以下列出不同点
+
++ `dataSources`：array，必须，要用在数据功能上的 Azure OpenAI 数据源
+
+  + 元素为 `type: parameters` 构成的字典
+
+  + `type`：指定需要使用的 Azure OpenAI 数据源
+
+  + `parameters`：对应数据源所需的参数
+
+  + 例子
+
+    ```json
+    "dataSources": [
+        {
+            "type": "AzureCognitiveSearch",
+            "parameters": {
+                "endpoint": "YOUR_AZURE_COGNITIVE_SEARCH_ENDPOINT",
+                "key": "'YOUR_AZURE_COGNITIVE_SEARCH_KEY'",
+                "indexName": "'YOUR_AZURE_COGNITIVE_SEARCH_INDEX_NAME'"
+            }
+        }
+    ],
+    ```
+
++ `stream` 的结束信号为
+
+  ```json
+  "messages": [
+      {
+          "delta": {"content": "[DONE]"}, 
+          "index": 2, 
+          "end_turn": true
+      }
+  ]
+  ```
+
++ `stop` 的最大序列长度为 2
+
++ `dataSources` 中 `parameters` 的参数（以 `AzureCognitiveSearch` 为例）
+
+  + 必须参数
+    + `endpoint`：string，数据源的 endpoint
+    + `key`：string，Azure Cognitive Search 的 admin key，任选其一即可
+    + `indexName`：string，搜索所使用的 index
+  + 非必须参数
+    + `fieldsMapping`：dictionary，index 与数据列的映射，默认为 null
+    + `inScope`：boolean，是否将回应限制为特定于基础数据内容，默认为 true
+    + `topNDocuments`：number，文档增强所需获取的文档数量，默认为 5
+    + `queryType`：string，Azure Cognitive Search 的选项，默认为 simple
+      + 可选项：simple、semantic、vector、vectorSimpleHybrid、vectorSemanticHybrid
+    + `semanticConfiguration`：string，语义搜索的配置，默认为 null
+      + 仅当 `queryType` 为 semantic / vectorSemanticHybrid 时可用
+    + `roleInformation`：string，指示模型应如何表现及上下文如何，默认为 null
+      + 对应于 Azure OpenAI Studio 中的 System Message
+      + 长度限制为 100 tokens，注意也会计入 tokens 总数
+    + `filter`：string，用于限制敏感文档访问权限的过滤器 pattern，默认为 null
+    + 用于私人网络及私人 endpoint 之外的向量搜索
+      + 参数：`embeddingEndpoint`、`embeddingKey`、`embeddingDeploymentName`
+      + 注意需要部署 Ada embedding 模型
+
+
+
+#### 发起 ingestion 任务
+
+```bash
+curl -i -X PUT https://YOUR_RESOURCE_NAME.openai.azure.com/openai/extensions/on-your-data/ingestion-jobs/JOB_NAME?api-version=2023-10-01-preview \ 
+-H "Content-Type: application/json" \ 
+-H "api-key: YOUR_API_KEY" \ 
+-H "searchServiceEndpoint: https://YOUR_AZURE_COGNITIVE_SEARCH_NAME.search.windows.net" \ 
+-H "searchServiceAdminKey: YOUR_SEARCH_SERVICE_ADMIN_KEY" \ 
+-H  "storageConnectionString: YOUR_STORAGE_CONNECTION_STRING" \ 
+-H "storageContainer: YOUR_INPUT_CONTAINER" \ 
+-d '{ "dataRefreshIntervalInMinutes": 10 }'
+```
+
++ request 内容
+  + `dataRefreshIntervalInMinutes` ：string，必须，数据的刷新间隔，单位为 min，默认为 0
+    + 无规划的单个任务可以设为 0
+  + `completionAction`：string，可选，如何处理中途产生的 assets，默认为 cleanUpAssets
+    + 可选项：cleanUpAssets、keepAllAssets
+  + 连接相关
+    + `searchServiceEndpoint`、`searchServiceAdminKey`：指定搜索服务所用的 endpoint
+    + `storageConnectionString`、`storageContainer`：指定输入文件所在的 storage
+    + `embeddingEndpoint`、`embeddingKey`：仅当涉及向量搜索时需要
+
+#### 列出 ingestion 任务
+
+```bash
+curl -i -X GET https://YOUR_RESOURCE_NAME.openai.azure.com/openai/extensions/on-your-data/ingestion-jobs?api-version=2023-10-01-preview \ 
+-H "api-key: YOUR_API_KEY"
+```
+
+#### 获取 ingestion 任务状态
+
+```bash
+curl -i -X GET https://YOUR_RESOURCE_NAME.openai.azure.com/openai/extensions/on-your-data/ingestion-jobs/YOUR_JOB_NAME?api-version=2023-10-01-preview \ 
+-H "api-key: YOUR_API_KEY"
+```
+
+
+
+
+
+## Python SDK - openai
 
 ### Overview
 
 + 本质上是对 REST API 的调用做了包装，因此还是以参考 REST API 为主
 + 注意虽然调用的是 AOAI 服务，但调用的库是 openai 提供的
-+ openai 0.x 和 openai 1.x 之间差别较大，注意搞清版本
++ openai 0.x 和 openai 1.x 之间差别较大，注意搞清版本，这里以 1.x 版本为准
+
+
+
+### 基本使用
+
+```python
+# 导包
+from openai import AzureOpenAI
+ 
+# 创建 client
+client = AzureOpenAI(
+    api_key="<your key>",  
+    api_version="2023-12-01-preview",
+    azure_endpoint = "<your endpoint>"
+)
+
+# 发起补全并处理回应
+response = client.chat.completions.create(
+    model="gpt-35-turbo",  # model = "deployment_name".
+    messages = [
+        {"role": "system", "content": "Assistant is an English teacher."},
+        {"role": "user", "content": "How to express running too fast?"}
+    ]
+)
+print(response.choices[0].message.content)
+```
+
+
 
 
 
 
 
 ## Add your data
+
+gpt-4-vision 仅支持图片，不支持文本
 
 ### mongodb
 
