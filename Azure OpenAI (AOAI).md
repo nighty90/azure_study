@@ -179,10 +179,10 @@ POST {endpoint}/openai/deployments/{deploy_name}/chat/completions?api-version={a
     + message 元素形式： `{"role": "role gives the message"，"message": "The acutall message"}`
     + 注意通常不仅包括用户该次发送的信息
 + 生成设置
-  + `max_tokens`：integer，补全的最大 token 数，**常用属性**
-    + 本质上请求了需要占用的计算资源，是实际计算使用的 token 数的依据
-    + 当该值较大时，模型延迟也会较大
-    + 注意 [ messages 长度 + max_tokens ] 不能超过模型 context 长度
+  + `max_tokens`：integer，规定模型 response 的最大 token 数，**常用属性**
+    + 即指定了模型输出维度大小，当该值较大时，模型延迟也会较大
+    + 由于本质上请求了需要占用的计算资源，是实际计算使用的 token 数的依据
+    + 注意 [ messages 长度 + max_tokens ] 不能超过模型 context 长度，
   + `n`：integer，各 prompt 生成的补全数量，默认为 1
     + 注意会大量消耗 token 配额，请确保已正确设置 `max_tokens` 和 `stop`
   + `stream`：boolean，是否以数据流的形式返回，默认为 False，**常用属性**
