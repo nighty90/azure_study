@@ -258,7 +258,7 @@ POST {endpoint}/openai/deployments/{deploy_name}/embeddings?api-version={api-ver
 
 ### Completions extensions
 
-对于 chat completions 的扩展，可应用更多 Azure OpenAI 提供的功能，如 add your data
+对于 chat completions 的扩展，可应用更多 AOAI 提供的功能，如 add your data
 
 ```http
 POST {endpoint}/openai/deployments/{deploy_name}/extensions/chat/completions?api-version={api-version}
@@ -266,13 +266,13 @@ POST {endpoint}/openai/deployments/{deploy_name}/extensions/chat/completions?api
 
 请求体基本同 Chat completions，以下列出不同点
 
-+ `dataSources`：array，必须，要用在数据功能上的 Azure OpenAI 数据源
++ `dataSources`：array，必须，指明 add your data 功能搜索的数据源
 
   + 元素为 `type: parameters` 构成的字典
 
-  + `type`：指定需要使用的 Azure OpenAI 数据源
+    + `type`：指定需要使用的数据源
 
-  + `parameters`：对应数据源所需的参数
+    + `parameters`：对应数据源所需的参数
 
   + 例子
 
@@ -378,7 +378,7 @@ curl -i -X GET https://YOUR_RESOURCE_NAME.openai.azure.com/openai/extensions/on-
 
 
 
-### 基本使用
+### Basic Usage
 
 ```python
 # 导包

@@ -2,12 +2,6 @@
 
 
 
-
-
-## Overview
-
-
-
 ## Speech to text (STT)
 
 ### STT REST API for short audio
@@ -19,108 +13,88 @@
   + 仅能处理 WAV 和 OGG 格式的音频
   + 仅返回最终结果，不提供部分结果
   + 不支持语音翻译、批量转录、自定义STT
-+ 另有非短音频的 STT REST API？
++ 另有用于 batch transcription 和 custom speech 的 STT REST API
 
 
 
-#### Usage
+#### 短音频 STT
 
-+ POST 请求
+```http
+POST https://<REGION>.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1
+```
 
-  ```
-  https://<REGION>.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1
-  ```
+##### url 参数
 
-+ Headers
++ `language`：必须，需要识别的语言
+  `format`：指定结果格式，可选 simple / detailed，默认simple
+  + simple 内容：RecognitionStatus、DisplayText、Offset 和 Duration
+  + detailed 内容：包括显示文本的四种不同的表示形式
++ `profanity`：不雅内容的处理方式，可选 masked / removed / raw，默认为 masked
++ `cid`：自定义模型的 id
 
-  + `Ocp-Apim-Subscription-Key`：必须，key，与 `Authorization` 二选一即可
 
-  + `Authorization`：必须，带上 "Bearer" 前缀的 token，与 `Ocp-Apim-Subscription-Key` 二选一即可
 
-  + `Content-type`：必须，提供的音频格式及编解码器
+##### Headers
 
-    + WAV 格式：audio/wav; codecs=audio/pcm; samplerate=16000
-    + OGG 格式：audio/ogg; codecs=opus
++ `Ocp-Apim-Subscription-Key`：必须，key，与 `Authorization` 二选一即可
 
-  + `Pronunciation-Assessment`：指定如何评估发音，是 Base64 编码的 JSON
++ `Authorization`：必须，带上 "Bearer" 前缀的 token，与 `Ocp-Apim-Subscription-Key` 二选一即可
 
-    + python 中进行 base64 编码的例子
++ `Content-type`：必须，提供的音频格式及编解码器；SDK 支持的格式更多
+  + WAV 格式：audio/wav; codecs=audio/pcm; samplerate=16000
+  + OGG 格式：audio/ogg; codecs=opus
+  
++ `Pronunciation-Assessment`：指定如何评估发音，是 Base64 编码的 JSON 格式文本
+  + `ReferenceText`：必须，参考文本
+  
+  + `GradingSystem`：分数规格，可选 FivePoint / HundredMark
+  
+  + `Granularity`：评估粒度，可选 Phoneme / Word / FullText
+  
+    + Phoneme 给出全文、单词、音素的得分，而 FullText 只给出全文得分
+  
+  + `Dimension`：输出内容，可选 Basic / Comprehensive
+  
+  + `EnableMiscue`：启用误读计算，布尔值，默认为 False
+  
+  + `ScenarioId`：GUID，表示自定义分数系统
+  
++ `Transfer-Encoding`：指定要发送的数据分块，仅当要分块时使用
 
-      ```python
-      import base64
-      import json
-      
-      ParamsDict = {
-          "ReferenceText": "Good morning.",
-          "GradingSystem": "HundredMark",
-          "Dimension": "Comprehensive"
-      }
-      ParamsJson = json.dumps(ParamsDict)
-      ParamsBase64 = base64.b64encode(bytes(ParamsJson, "utf-8"))
-      Params = str(ParamsBase64, "utf-8")
-      ```
+  + 必须与 `Expect` 同用
+  + 建议使用分块传输，能减小延迟
 
-    + `ReferenceText`：必须，参考文本
++ `Expect`：分块传输时需启用，SS 将确认初始请求并等待附加的数据
 
-    + `GradingSystem`：分数规格，可选 FivePoint / HundredMark
+  + 值固定，为 Expect: 100-continue
 
-    + `Granularity`：评估粒度，可选 Phoneme / Word / FullText
++ `Accept`：SS 返回的结果格式，必须是 application/json
 
-      + Phoneme 给出全文、单词、音素的得分，而 FullText 只给出全文得分
+  + 为避免某些框架默认的该项参数不正确，尽量手动设置一下
 
-    + `Dimension`：输出内容，可选 Basic / Comprehensive
 
-    + `EnableMiscue`：启用误读计算，布尔值，默认为 False
 
-    + `ScenarioId`：GUID，表示自定义分数系统
+#### 申请 token
 
-  + `Transfer-Encoding`：指定要发送的数据分块，仅当要分块时使用
+每个 token 的有效期为 10min，考虑到网络延迟等，建议同一 token 仅使用 9min
 
-    + 必须与 `Expect` 同用
-    + 建议使用分块传输，能减小延迟
+```http
+POST https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
+```
 
-  + `Expect`：分块传输时需启用，SS 将确认初始请求并等待附加的数据
+##### headers
 
-    + 值固定，为 Expect: 100-continue
++ `Ocp-Apim-Subscription-Key`：<YOUR_SUBSCRIPTION_KEY>
++ `Content-type`：application/x-www-form-urlencoded
++ `Content-Length`：0
 
-  + `Accept`：SS 返回的结果格式，必须是 application/json
 
-    + 为避免某些框架默认的该项参数不正确，尽量手动设置一下
-
-+ url 参数
-
-  + `language`：必须，需要识别的语言
-    `format`：指定结果格式，可选 simple / detailed，默认simple
-    + simple 内容：RecognitionStatus、DisplayText、Offset 和 Duration
-    + detailed 内容：包括显示文本的四种不同的表示形式
-  + `profanity`：不雅内容的处理方式，可选 masked / removed / raw，默认为 masked
-  + `cid`：自定义模型的 id
-
-+ 申请 token
-
-  + POST 请求
-
-    ```
-    https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
-    ```
-
-  + headers
-
-    + `Ocp-Apim-Subscription-Key`：<YOUR_SUBSCRIPTION_KEY>
-    + `Content-type`：application/x-www-form-urlencoded
-    + `Content-Length`：0
-
-  + 每个 token 的有效期为 10min，考虑到网络延迟等，建议同一 token 仅使用 9min
 
 
 
 ### STT Python SDK
 
 #### Notes
-
-+ Python SDK：`azure-cognitiveservices-speech`
-
-+ 导入：`import azure.cognitiveservices.speech as speechsdk`
 
 + offset 与 duration：识别时，语句的开始点与时长
 
@@ -141,8 +115,7 @@
 + 自动识别语言
 
   ```python
-  auto_detect_source_language_config = \
-  	speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+  auto_detect_source_language_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
       	languages=["en-US", "de-DE"]
   )
   speech_recognizer = speechsdk.SpeechRecognizer(
@@ -165,9 +138,7 @@
 
 
 
-#### Quickstart: Recognize and convert speech to text
-
-以从麦克风中识别为例
+#### Basic Usage
 
 1. 设置 speech：必须设置 key、region 和语言
 
@@ -221,11 +192,9 @@
 
 #### Use continuous recognition
 
-1. 在本例中，使用音频文件作为输入
+1. 设置全局变量用于之后退出循环：`done = False`
 
-2. 设置全局变量用于之后退出循环：`done = False`
-
-3. 构造回调函数用以停止识别
+2. 构造回调函数用以停止识别
 
    ```python
    def stop_cb(evt):
@@ -238,33 +207,12 @@
    + 必须调用 `stop_continuous_recognition()`
    + 必须改变全局变量来退出循环
 
-4. 将事件信号（识别器的多个属性）与回调函数相连接
-
-   ```python
-   speech_recognizer.recognizing.connect(
-       lambda evt: print('RECOGNIZING: {}'.format(evt))
-   )
-   speech_recognizer.recognized.connect(
-       lambda evt: print('RECOGNIZED: {}'.format(evt))
-   )
-   speech_recognizer.session_started.connect(
-       lambda evt: print('SESSION STARTED: {}'.format(evt))
-   )
-   speech_recognizer.session_stopped.connect(
-       lambda evt: print('SESSION STOPPED {}'.format(evt))
-   )
-   speech_recognizer.canceled.connect(
-       lambda evt: print('CANCELED {}'.format(evt))
-   )
-   
-   speech_recognizer.session_stopped.connect(stop_cb)
-   speech_recognizer.canceled.connect(stop_cb)
-   ```
+3. 将事件信号（识别器的多个属性）与回调函数相连接
 
    + 这里作为示例，多个信号的回调函数为打印收到的信号
    + 注意同一个信号可以连接多个回调函数
 
-5. 开始识别
+4. 开始识别
 
    ```python
    speech_recognizer.start_continuous_recognition()
@@ -347,6 +295,8 @@
 
 ## Text To Speech (TTS)
 
+### Notes
+
 #### 关于人声
 
 + 旧版人声（非神经人声）正在逐渐停用，请迁移到神经人声（neural voice）
@@ -400,6 +350,10 @@ Basic structure
 </speak>
 ```
 
+
+
+##### Notes
+
 + 基本上是一种 XML
 
 + 关于收费
@@ -411,59 +365,61 @@ Basic structure
     + 字母、标点、空格、制表符、标记、空白字符
     + Unicode 定义的所有码位
 
-+ SS 的 SSML 是基于 W3C SSML 1.0 版本的，但支持的元素有所不同
++ Speech 的 SSML 是基于 W3C SSML 1.0 版本的，但支持的元素有所不同
 
 + 作为一种 XML，需要注意特殊字符的转义
 
   + 常见：`&` -> `&amp;`、`<` -> `&lt;`、`>` -> `&gt;`
   + 其他详细见 [Extensible Markup Language (XML) 1.0: Appendix D](https://www.w3.org/TR/xml/#sec-entexpand)
 
-+ 常用元素及其属性
 
-  + 划分结构
-    + `speak`：根元素，至少包含一个 `voice` 元素
-      + `version`：SSML 版本，当前为 "1.0"
-      + `xml:lang`：文档语言，注意不是语音的语言
-      + `xmlns`：一个 URI，指向定义 SSML 标记词汇的文档
-    + `break`：添加暂停，无包含，可用于词之间
-      + `strength`：暂停的相对时间
-        + 可选 x-weak / week / medium（默认） / strong / x-strong
-      + `time`：暂停的绝对时间，优先级高于 `strength`，单位可以是 s 或 ms
-    + `mstts:silence`：添加静音，只能用于句子之间
-      + 应用于当前 `voice` 的全部文本
-      + `type`：指明静音方式和位置，可选项很多，具体见文档
-      + `value`：静音时长，单位为 s 或 ms，范围为 0 - 5s
-    + `p` 与 `s`：指明段落和句子，缺少时 SS 将自动推断
-      + 主要用于提升 SSML 的可读性？
-    + `bookmark`：标记特定位置，无包含，合成时产生 `BookmarkReached` 事件
-  + 控制语音
-    + `voice`：用于 TTS 的文本
-      + `name`：必须，使用的人声名称
-      + `effect`：音效，可选 eq_car / eq_telecomhp8k
-    + `mstts:express-as`：控制人声风格和角色
-      + `style`：人声风格，通常为情绪或身份
-      + `styledegree`：风格强度，范围为 0.01 - 2，默认为 1，最小单位为 0.01
-      + `role`：角色，用于使人声模拟不同年龄、性别的声调
-    + `lang`：转变语言
-      + 注意多数神经人声不支持在句子 / 单词水平设置语言
-      + 注意 `speak` 中的 `xml:lang` 设置的是默认语言
-      + `xml:lang`：需要使用的语言
-    + `prosody`：韵律，调整音高、语调、范围、速率和音量
-      + 设置较为复杂，建议参考文档
-    + `emphasis`：设置强调
-      + 仅适用于 `en-US-GuyNeural`、`en-US-DavisNeural`、`en-US-JaneNeural`
-      + `level`：强度，可选 reduced / none / moderate（默认） / strong
-    + `audio`：预录制的音频
-      + `src`：音频文件的 URI，可以放在同 Azure 区域的 Blob 中以减少延迟
-    + `mstts:audioduration`：设置输出的合成音频的持续时间
-      + `value`：持续时间，以 s / ms 为单位，范围为原音频的一半到两倍长
-    + `mstts:backgroundaudio`：设置背景音，每个 SSML 文档仅允许存在一个
-      + `src`：URI
-      + `volume`：音量，范围为 0 - 100，默认为 1
-      + `fadein` / `fadeout`：淡入淡出，单位为 ms，范围为 0 - 10,000
-  + 控制音节发音：较不常用，请参考文档
 
-  
+##### 常用元素及其属性
+
++ 划分结构
+  + `speak`：根元素，至少包含一个 `voice` 元素
+    + `version`：SSML 版本，当前为 "1.0"
+    + `xml:lang`：文档语言，注意不是语音的语言
+    + `xmlns`：一个 URI，指向定义 SSML 标记词汇的文档
+  + `break`：添加暂停，无包含，可用于词之间
+    + `strength`：暂停的相对时间
+      + 可选 x-weak / week / medium（默认） / strong / x-strong
+    + `time`：暂停的绝对时间，优先级高于 `strength`，单位可以是 s 或 ms
+  + `mstts:silence`：添加静音，只能用于句子之间
+    + 应用于当前 `voice` 的全部文本
+    + `type`：指明静音方式和位置，可选项很多，具体见文档
+    + `value`：静音时长，单位为 s 或 ms，范围为 0 - 5s
+  + `p` 与 `s`：指明段落和句子，缺少时 SS 将自动推断
+    + 主要用于提升 SSML 的可读性？
+  + `bookmark`：标记特定位置，无包含，合成时产生 `BookmarkReached` 事件
++ 控制语音
+  + `voice`：用于 TTS 的文本
+    + `name`：必须，使用的人声名称
+    + `effect`：音效，可选 eq_car / eq_telecomhp8k
+  + `mstts:express-as`：控制人声风格和角色
+    + `style`：人声风格，通常为情绪或身份
+    + `styledegree`：风格强度，范围为 0.01 - 2，默认为 1，最小单位为 0.01
+    + `role`：角色，用于使人声模拟不同年龄、性别的声调
+  + `lang`：转变语言
+    + 注意多数神经人声不支持在句子 / 单词水平设置语言
+    + 注意 `speak` 中的 `xml:lang` 设置的是默认语言
+    + `xml:lang`：需要使用的语言
+  + `prosody`：韵律，调整音高、语调、范围、速率和音量
+    + 设置较为复杂，建议参考文档
+  + `emphasis`：设置强调
+    + 仅适用于 `en-US-GuyNeural`、`en-US-DavisNeural`、`en-US-JaneNeural`
+    + `level`：强度，可选 reduced / none / moderate（默认） / strong
+  + `audio`：预录制的音频
+    + `src`：音频文件的 URI，可以放在同 Azure 区域的 Blob 中以减少延迟
+  + `mstts:audioduration`：设置输出的合成音频的持续时间
+    + `value`：持续时间，以 s / ms 为单位，范围为原音频的一半到两倍长
+  + `mstts:backgroundaudio`：设置背景音，每个 SSML 文档仅允许存在一个
+    + `src`：URI
+    + `volume`：音量，范围为 0 - 100，默认为 1
+    + `fadein` / `fadeout`：淡入淡出，单位为 ms，范围为 0 - 10,000
++ 控制音节发音：较不常用，请参考文档
+
+
 
 
 
@@ -471,21 +427,19 @@ Basic structure
 
 https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#convert-text-to-speech
 
-#### 进行 TTS
+```http
+POST https://{REGION}.tts.speech.microsoft.com/cognitiveservices/v1
+```
 
-+ POST 请求
+#### headers
 
-  ```
-  https://{REGION}.tts.speech.microsoft.com/cognitiveservices/v1
-  ```
+注意以下 4 项全为必须项
 
-+ headers：注意以下 4 项全为必须项
-
-  + `Ocp-Apim-Subscription-Key`：key
-  + `Content-Type`：application/ssml+xml
-  + `X-Microsoft-OutputFormat`：输出格式
-    + 例子：audio-16khz-128kbitrate-mono-mp3
-  + `User-Agent`：发出请求的应用名，最长255字符，由用户设置
++ `Ocp-Apim-Subscription-Key`：key
++ `Content-Type`：application/ssml+xml
++ `X-Microsoft-OutputFormat`：输出格式
+  + 例子：audio-16khz-128kbitrate-mono-mp3
++ `User-Agent`：发出请求的应用名，最长255字符，由用户设置
 
 + 请求体
 
