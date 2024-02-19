@@ -7,10 +7,12 @@
 + 注意实际输入给 GPT 模型的 prompt 是包含一定量的上下文的
 + `max_token` 指示了向模型申请的计算资源的大小，因此是计费的依据
   + 具体模型的限制见文档
-
 + embedding 模型输出的维度为 1536
+  + 好像有新的 embedding 模型了，还没试
+
 + 关于 GPT-4 的地区支持性，注意部分列出的地区仅能使用已创建的 GPT-4 部署
   + 无法新建也无法编辑
++ 注意与其他资源不同，调用时 key 在 headers 里设为 `api-key` 
 
 
 
@@ -372,7 +374,7 @@ curl -i -X GET https://YOUR_RESOURCE_NAME.openai.azure.com/openai/extensions/on-
 
 ### Overview
 
-+ 本质上是对 REST API 的调用做了包装，因此还是以参考 REST API 为主
++ 本质上是用 httpx 库调用 REST API，因此还是以参考 REST API 为主
 + 注意虽然调用的是 AOAI 服务，但调用的库是 openai 提供的
 + openai 0.x 和 openai 1.x 之间差别较大，注意搞清版本，这里以 1.x 版本为准
 

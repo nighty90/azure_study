@@ -4,8 +4,6 @@
 
 ## Note
 
-+ 如果 http 请求需要附带 JSON 格式的数据，则 headers 中需要设置 `Content-Type: application/json`
-+ headers 中必须设置 `Ocp-Apim-Subscription-Key: <key>`
 + 区分各种 Read 和 OCR
   + 参考资料：https://stackoverflow.com/questions/70657936/microsoft-computer-vision-ocr-read-api-charged-as-s3-transaction-instead-of-s2
   + Vision v3.2 - OCR：从图像中识别印刷体文字
@@ -28,12 +26,12 @@
 
 
 
-## Vision - Overview - What is Azure AI Vision?
+## Overview
 
-+ 包含的服务
++ 包含的服务：比较混乱，建议去 Vision Studio 里抓包看看调用方式
   + OCR：从图像识别文字，相比 Document Intelligence 更适合识别非文档的图像
   + Image Analysis：从图像提取视觉特征，包括物体、人脸、成人内容等，并自动生成说明
-  + Face：检测 / 识别 / 分析人脸
+  + Face：检测 / 识别 / 分析人脸，注意使用的不是 Computer Vision 资源
   + Spatial Analysis：从视频输入分析人物是否出现或移动
 + 图像要求
   + 格式：JPEG、PNG、GIF、BMP
@@ -42,9 +40,7 @@
 
 
 
-## Vision - OCR - Quickstart: Azure AI Vision v3.2 GA Read
-
-以 REST API 为例
+## OCR
 
 ### Notes
 
@@ -55,7 +51,7 @@
 
 
 
-### Read printed and handwritten text
+### REST API
 
 1. 调用 read API 分析图像
 
@@ -78,155 +74,188 @@
 
 
 
-## Vision - Face - Quickstart: Use the Face service
-
-以 REST API 为例
-
-
+## Face 
 
 ### Notes
 
-+ 需要创建 Face 资源，注意该服务也是访问受限的，需要申请 access
++ 访问受限，需要申请权限
++ 注意使用的是 Face API 资源而非 Computer Vision 资源
 
 
 
-### Identify and verify faces
+### Models
 
-1. 在源图像上调用 detect，得到需要识别的源人脸
-
-   + POST 请求：`{endpoint}/face/v1.0/detect`
-
-     + `returnFaceId`：是否返回人脸 id，默认为 true
-     + 注意需要 access
-     + `returnFaceLandmarks`：是否返回人脸特征点，默认为 false
-     + `returnFaceAttributes`：需要提取的人脸属性，多属性之间逗号分隔
-       + 可选项: headPose, galsses, occlusion, accessories, blur, exposure, noise, mask,  qualityForRecognition
-       + 注意不是所有 detection 模型都支持这些属性
-         + 例如 detection_03 仅支持 headpose、mask、qualityforrecognition
-       + 注意分隔仅需要逗号，不要空格
-     + `recognitionModel`：所使用的 recognition 模型
-       + 可选项：recognition_01 到 04，默认为 01，推荐 04
-     + `returnRecognitionModel`：是否返回所使用的模型，默认为 false
-     + `detectionModel`：所使用的 detection 模型
-       + 可选项：detection_01 到 03，默认为 01
-     + `faceIdTimeToLive`：人脸 id 缓存的时间，单位为 s，范围为 60 - 86400（24h），默认最大
-
-   + request body
-
-     ```json
-     {"url": "<url_to_image_containing_faces_to_be_recognized>"}
-     ```
-
-   + 返回的内容：人脸 id、所在区域、各人脸属性
-
-   + 注意记录返回的人脸 id
-
-2. 创建 LargePersonGroup，该对象用于存储多个人的聚合人脸数据
-
-   + PUT 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}`
-
-     + `GroupId` 由用户设置，仅由小写字母、数字、下划线、hypen组成，最大长度为 64
-
-   + request body
-
-     ```json
-     {
-         "name": "<group_name>",
-         "userData": "<user_provided_data_attached_to_the_group>",
-         "recognitionModel": "<recognition_model>"
-     }
-     ```
-
-     + 注意 `recognitionModel` 需要与检测源人脸时的 recognition 模型一致
-       + 或者反过来说，检测原人脸时，应使用对应组所用的 recognition 模型
-
-   + 注意记录自己设置的组 id
-
-3. 为创建的组再创建人员对象
-
-   + POST 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}/persons`
-
-     + 这里 `GroupId` 为上一步设置的组 id
-
-   + request body
-
-     ```json
-     {
-         "name": "<person_name>",
-         "userData": "<user_provided_data_attached_to_the_person>"
-     }
-     ```
-
-   + 注意记录创建的人员 id
-
-4. 为已创建的人员关联人脸数据
-
-   + POST 请求
-
-     ```
-     {endpoint}/face/v1.0/largepersongroups/{GroupId}/persons/{personId}/persistedfaces
-     ```
-
-     + `detectionModel`：设置所用的 detection 模型，默认为 detection_01
-
-   + request body
-
-     ```json
-     {"url": "<url_to_face_image_of_the_person>"}
-     ```
-
-5. 使用关联好的人脸数据训练该 LargePersonGroup，令模型学会将人脸与人员对应
-
-   + POST 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}/train`
-
-6. 使用训练好的组来识别源人脸
-
-   + POST 请求：`{endpoint}/face/v1.0/identify`
-
-   + request body
-
-     ```json
-     {
-         "largePersonGroupId": "<INSERT_PERSONGROUP_ID>",
-         "faceIds": [
-                 "<INSERT_SOURCE_FACE_ID>"
-         ],  
-         "maxNumOfCandidatesReturned": 1,
-         "confidenceThreshold": 0.5
-     }
-     ```
-
-     + 注意这里的 `largePersonGroupId` 是组 id 而不是组名称
-
-   + 返回的是该人脸 id 对应的人员 id
-
-   + 注意如果检测人脸和创建组时用的 recognition model 不一致，会报错
-
-     + 400，BadArgument，'recognitionModel' is incompatible.
-
-7. 进行人脸验证
-
-   + POST 请求：`{endpoint}/face/v1.0/verify`
-
-   + request body
-
-     ```json
-     {
-         "faceId": "<INSERT_SOURCE_FACE_ID>",
-         "personId": "<INSERT_PERSON_ID>",
-         "largePersonGroupId": "<INSERT_PERSONGROUP_ID>"
-     }"
-     ```
-
-   + 判断人脸 id 与人员 id 是否能对应上，返回布尔值及其置信度
+|            | **detection_01**                    | **detection_02**               | detection_03                                 |
+| ---------- | :---------------------------------- | :----------------------------- | :------------------------------------------- |
+| 历史       | 最早的模型，默认项                  | 2019/05 发布                   | 2021/02 发布                                 |
+| 针对性优化 | 基础                                | 小尺寸人脸、侧视人脸、模糊人脸 | 基础准确度、人脸较小（64x64 像素）、人脸转动 |
+| 可用属性   | 头部姿势、年龄、表情等 + 人脸特征点 | /                              | 面罩、头部姿势 + 人脸特征点                  |
 
 
 
-## Vision - Face
+### Concepts
+
++ Face detection：检测图片中的人脸
++ Face recognition：
+
+
+
+### REST API Examples
+
+#### Identify and verify faces
+
+一、在源图像上调用 detect，得到需要识别的源人脸
+
+```http
+POST {endpoint}/face/v1.0/detect
+```
+
++ url 参数
+
+  + 这些参数全部为可选参数
+  + `returnFaceId`：是否返回人脸 id，默认为 true
+  + `returnFaceLandmarks`：是否返回人脸特征点，默认为 false
+  + `returnFaceAttributes`：需要提取的人脸属性，多属性之间逗号分隔
+    + 可选项: headPose, galsses, occlusion, accessories, blur, exposure, noise, mask,  qualityForRecognition
+    + 注意各 detection 模型支持的属性不同，建议实测
+      + qualityForRecognition 仅当 detection 模型为 01/03、recognition 模型为 03/04 时可用
+    + 注意分隔仅需要逗号，不要空格
+    + 具体说明参考 [Face detection, attributes, and input data - Face - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/concept-face-detection#attributes)
+  + `recognitionModel`：所使用的 recognition 模型
+    + 可选项：recognition_01 到 04，默认为 01，推荐 04
+  + `returnRecognitionModel`：是否返回所使用的模型，默认为 false
+  + `detectionModel`：所使用的 detection 模型
+    + 可选项：detection_01 到 03，默认为 01
+  + `faceIdTimeToLive`：人脸 id 缓存的时间，单位为 s，范围为 60 - 86400（24h），默认最大
+
++ request body
+
+  ```json
+  {"url": "<url_to_image_containing_faces_to_be_recognized>"}
+  ```
+
++ 返回的内容为列表，包含所有在该图像中检测到的人脸的信息
+
+  + 人脸信息：人脸 id、所在区域、各人脸属性
+    + 注意记录返回的人脸 id，后面 identify 时需要用到
+  + 如果图中没有人脸，则会返回空列表
+
+
+
+二、创建 LargePersonGroup，该对象用于存储多个人的聚合人脸数据
+
++ PUT 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}`
+
+  + `GroupId` 由用户设置，仅由小写字母、数字、下划线、hypen组成，最大长度为 64
+
++ request body
+
+  ```json
+  {
+      "name": "<group_name>",
+      "userData": "<user_provided_data_attached_to_the_group>",
+      "recognitionModel": "<recognition_model>"
+  }
+  ```
+
+  + 注意 `recognitionModel` 需要与检测源人脸时的 recognition 模型一致
+    + 或者反过来说，检测原人脸时，应使用对应组所用的 recognition 模型
+
++ 注意记录自己设置的组 id
+
+
+
+三、为创建的组再创建人员对象
+
++ POST 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}/persons`
+
+  + 这里 `GroupId` 为上一步设置的组 id
+
++ request body
+
+  ```json
+  {
+      "name": "<person_name>",
+      "userData": "<user_provided_data_attached_to_the_person>"
+  }
+  ```
+
++ 注意记录创建的人员 id
+
+
+
+四、为已创建的人员关联人脸数据
+
++ POST 请求
+
+  ```
+  {endpoint}/face/v1.0/largepersongroups/{GroupId}/persons/{personId}/persistedfaces
+  ```
+
+  + `detectionModel`：设置所用的 detection 模型，默认为 detection_01
+
++ request body
+
+  ```json
+  {"url": "<url_to_face_image_of_the_person>"}
+  ```
+
+
+
+五、使用关联好的人脸数据训练该 LargePersonGroup，令模型学会将人脸与人员对应
+
++ POST 请求：`{endpoint}/face/v1.0/largepersongroups/{GroupId}/train`
+
+
+
+六、使用训练好的组来识别源人脸
+
++ POST 请求：`{endpoint}/face/v1.0/identify`
+
++ request body
+
+  ```json
+  {
+      "largePersonGroupId": "<INSERT_PERSONGROUP_ID>",
+      "faceIds": [
+              "<INSERT_SOURCE_FACE_ID>"
+      ],  
+      "maxNumOfCandidatesReturned": 1,
+      "confidenceThreshold": 0.5
+  }
+  ```
+
+  + 注意这里的 `largePersonGroupId` 是组 id 而不是组名称
+
++ 返回的是该人脸 id 对应的人员 id
+
++ 注意如果检测人脸和创建组时用的 recognition model 不一致，会报错
+
+  + 400，BadArgument，'recognitionModel' is incompatible.
+
+
+
+七、进行人脸验证
+
++ POST 请求：`{endpoint}/face/v1.0/verify`
+
++ request body
+
+  ```json
+  {
+      "faceId": "<INSERT_SOURCE_FACE_ID>",
+      "personId": "<INSERT_PERSON_ID>",
+      "largePersonGroupId": "<INSERT_PERSONGROUP_ID>"
+  }"
+  ```
+
++ 判断人脸 id 与人员 id 是否能对应上，返回布尔值及其置信度
+
+
+
+#### Find similar faces
 
 Face 的 base_url 为 `{endpoint}/face/v1.0`
-
-### Find similar faces
 
 1. 检测人脸，获取所有人脸的 id
 
@@ -253,21 +282,11 @@ Face 的 base_url 为 `{endpoint}/face/v1.0`
 
 
 
-### Notes
-
-+ detection 模型比较
-
-  |            | **detection_01**                    | **detection_02**               | detection_03                                 |
-  | ---------- | :---------------------------------- | :----------------------------- | :------------------------------------------- |
-  | 历史       | 最早的模型，默认项                  | 2019/05 发布                   | 2021/02 发布                                 |
-  | 针对性优化 | 基础                                | 小尺寸人脸、侧视人脸、模糊人脸 | 基础准确度、人脸较小（64x64 像素）、人脸转动 |
-  | 可用属性   | 头部姿势、年龄、表情等 + 人脸特征点 | /                              | 面罩、头部姿势 + 人脸特征点                  |
 
 
 
 
-
-## Vision - Image Analysis
+## Image Analysis
 
 ### Overview
 

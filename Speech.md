@@ -304,10 +304,16 @@ POST https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
   + 内置人声 prebuilt voice： 从 2021/09/01 到 2024/08/31 逐渐停用
 + [可用人声列表](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts)及[浏览](https://speech.microsoft.com/portal/voicegallery)，注意各区域可用的人声不同
 + 所有人声都为双语，可以说自己的语言和英语（带口音）
++ AOAI 也出了 TTS 声音
+  + 可以通过 Speech 的 SDK 使用
+    + 推荐，只需要改一下使用的声音名就行
+  + 也可以通过 AOAI 的 REST API 调用
+    + 注意请求体里的 model 属性与 deployment 不是一个东西
+    + 也许需要注意 api_version？目前测试 2024-02-15-preview 可用
 
-#### 收费方式
++ 人声有在更新，经测试 3.0 版本与 2.0 版本合成结果波形不同
 
-![image-20231107171527203](https://raw.githubusercontent.com/nighty90/ImgRepository/main/img/202402061709593.png)
+
 
 #### SSML 格式
 
