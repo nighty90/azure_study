@@ -13,6 +13,12 @@
 + 关于 GPT-4 的地区支持性，注意部分列出的地区仅能使用已创建的 GPT-4 部署
   + 无法新建也无法编辑
 + 注意与其他资源不同，调用时 key 在 headers 里设为 `api-key` 
++ dalle 相关
+  + 曾经能设置 seed，后来砍了
+  + openai 那边，dalle2 能用 variation 和 edit，但 AOAI 这边都部署不了 dalle2
+  + 能减少改写的咒语：`I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:`
+  + 有版权相关（或者单纯有名有姓？）的词时基本都会被改写，不改写的话容易触发 content filter
+
 
 
 
@@ -390,10 +396,10 @@ from openai import AzureOpenAI
 client = AzureOpenAI(
     api_key="<your key>",  
     api_version="2023-12-01-preview",
-    azure_endpoint = "<your endpoint>"
+    azure_endpoint="<your endpoint>"
 )
 
-# 发起补全并处理回应
+# 发起请求并处理回应
 response = client.chat.completions.create(
     model="gpt-35-turbo",  # model = "deployment_name".
     messages = [
@@ -405,6 +411,24 @@ print(response.choices[0].message.content)
 ```
 
 
+
+### Async Usage
+
+```python
+from openai import AsyncAzureOpenAI  # 导入异步版的 client
+
+client = AsyncAzureOpenAI(api_key="", api_version="",azure_endpoint="")
+
+# 发起请求并处理回应
+response = client.chat.completions.create(
+    model="gpt-35-turbo",  # model = "deployment_name".
+    messages = [
+        {"role": "system", "content": "Assistant is an English teacher."},
+        {"role": "user", "content": "How to express running too fast?"}
+    ]
+)
+print(response.choices[0].message.content)
+```
 
 
 
