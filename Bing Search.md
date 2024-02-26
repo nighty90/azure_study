@@ -2,7 +2,7 @@
 
 ## Notes
 
-+ Custom search 需要创建 Bing Custom Search 资源，其他的则是 Bing Search 资源
++ Custom search 需要创建 Bing Custom Search 资源，其他的则是使用 Bing Search 资源
 
 
 
@@ -17,13 +17,16 @@
 
 ## Custom Search
 
+### Notes
+
++ 注意使用的是 Bing Custom Search 服务
++ 设置 bing 搜索的范围，避免搜索到无关内容
++ 应用例：某个网站内嵌了一个 bing 搜索窗口，但希望用户仅能搜到该网站内的内容
+
+
+
 ### Tutorial: Build a Custom Search web page
 
-+ 自定义搜索
-  + 设置 bing 搜索的范围，避免搜索到无关内容
-  + 应用例：某个网站内嵌了一个 bing 搜索窗口，但希望用户仅能搜到该网站内的内容
-+ 先决条件：需要有 Bing Custom Search 的资源
-+ 创建门户：https://customsearch.ai/
 + Search Experience：核心部分，设置搜索范围
   + 网络切片概念
     + domain：域
@@ -53,9 +56,7 @@
 + Hosted UI：设置托管的搜索 UI
   + 可以选择布局、配色、功能选项
   + 此处需要输入 key
-    + 注意必须是 Bing Custom Search 的 key
-      + 其他服务，比如 Bing Search 或者 Cognitive Service 的 key 是不行的
-      + 自动填充可能会选定到 Cognitive Service 的 key，请手动改掉
+    + 注意必须是 Bing Custom Search 的 key，自动填充可能会选定到别的，请手动改掉
     + 关于 key 的类型
       + 在 2020/10/30 之前发行的的 key 设置为 Cognitive Service 类型
       + 之后的需要设置为 Bing Search Service 类型
