@@ -134,13 +134,24 @@ POST https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
   speech_config.set_property(speechsdk.PropertyId.Speech_LogFilename, "LogfilePathAndName")
   ```
 
-+ 
++ 指定语言
+
+  + 可以在 `SpeechConfig` 中设置 `speech_recognition_language`，然后传入 `SpeechRecognizer` 的 `speech_config`
+  + 可以创建 `languageconfig.SourceLanguageConfig`，然后传入 `SpeechRecognizer` 的 `source_language_config`
+  + 可以直接在 `SpeechRecognizer` 中设置 `language`
+  + 对于英语，似乎被指定成别的语言也依旧可以识别？
+
++ 文件输入的限制
+
+  + 只支持 wav 格式？
+  + 目前测下来大概不支持奇怪的声道？比如 8 声道文件
+
 
 
 
 #### Basic Usage
 
-1. 设置 speech：必须设置 key、region 和语言
+1. 设置 speech
 
    ```python
    speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
@@ -223,73 +234,6 @@ POST https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
    
 
 
-
-#### Important Classes
-
-+ `SpeechConfig`：语音设置
-
-  + 构造函数
-
-    ```python
-    SpeechConfig(subscription: str | None = None, region: str | None = None, endpoint: str | None = None, host: str | None = None, auth_token: str | None = None, speech_recognition_language: str | None = None)
-    ```
-
-    + 可以有 4 种初始化方式
-      1. 从 subscription：使用 `subscription` 和 `region`
-      2. 从 endpoint：使用 `endpoint`，此时 `subscription` 和 `auth_token` 可选
-         + 通常用于使用训练好的自定义模型
-      3. 从 host：使用 `host`，此时 `subscription` 和 `auth_token` 可选
-      4. 从 token：使用 `auth_token` 和 `region`
-    + 可以在这里设置 `speech_recognition_language` 来指定识别器的语言
-
-+ `audio.AudioConfig`：音频设置
-
-  + 构造函数
-
-    ```python
-    AudioConfig(use_default_microphone: bool = False, filename: str = None, stream: AudioInputStream = None, device_name: str = None)
-    ```
-
-    + `use_default_microphone`：是否使用默认系统麦克风进行音频输入
-    + `device_name`：指定要使用的音频设备的 ID
-    + `filename`：指定音频输入文件
-    + `stream`：指定使用的输入流，为 `AudioInputStream` 对象
-
-+ `SpeechRecognizer`：识别器
-
-  + 构造函数
-
-    ```python
-    SpeechRecognizer(speech_config: SpeechConfig, audio_config: AudioConfig = None, language: str = None, source_language_config: SourceLanguageConfig = None, auto_detect_source_language_config: AutoDetectSourceLanguageConfig = None)
-    ```
-
-    + 仅 `speech_config` 为必须参数
-    + 语言相关的参数请三选一
-      + `language`：手动指定语言，仅指定语言
-      + `source_language_config`：手动指定语言，但同时可以指定 endpoint
-      + `auto_detect_source_language_config`：自动判断
-
-  + 方法
-
-    + 以下方法都有 `<function_name>_async()` 的异步版本，返回 `ResultFuture` 对象
-    + 用 `start_<suffix>()` 开始识别后，用对应的 `stop_<suffix>()` 来停止识别
-    + 识别结果为 `SpeechRecognitionResult` 对象
-    + `recognize_once()`：仅识别一次，根据静音 / 超时（15s）来判断结束
-    + `start_continuous_recognition()`：开始连续识别
-      + 产生的识别信号由对应的 EventSignal 对象接收
-      + 需要用 `connect()` 方法为其设置回调函数以处理识别结果
-    + `start_keyword_recognition(model)`：调用 keyword 模型识别，此时识别器在传入 keyword 后开始识别
-
-+ `EventSignal`：处理事件信号
-
-  + `connect()`：将事件信号与回调函数连接
-    + 注意同一个信号可以连接多个回调函数，调用的顺序与连接时的顺序一致
-
-+ `RecognitionEventArgs`：事件信号
-
-  + 属性：session_id、offset、result（`SpeechRecognitionResult` 对象）
-
-+ `SpeechRecognitionResult`：识别结果
 
 
 
@@ -524,12 +468,15 @@ elif result.reason == speechsdk.ResultReason.Canceled:
     + `SpeechSynthesizer` 对象的 `audio_config` 参数应设为 None
     + 此时合成结果为数据流，可以用 `AudioDataStream` 类来辅助处理
 + `SpeechSynthesizer` 类的方法
-  + 以下方法都有 `<function>_async()` 的异步版本
+  + 注意点
+    + 以下方法都有 `<function>_async()` 的异步版本
     + 注意异步版本返回的是 `ResultFuture` 对象
+  
   + `get_voices_async()`：获取可用人声
   + `speak_ssml()` / `speak_text()`：以 SSML / 纯文本为输入合成
   + `start_speaking_ssml()` / `start_speaking_text()`：连续合成
   + `stop_speaking()`：结束连续合成
+  
 + `SpeechSynthesizer` 类的事件信号使用 `connect()` 方法连接回调函数
 + `ResultFuture` 类使用 `get()` 方法等待操作完成并返回结果
 
@@ -594,3 +541,149 @@ elif result.reason == speechsdk.ResultReason.Canceled:
   + url 参数包含 `skip`（跳过结果数） 和 `top`（返回结果个数）
 
 + 删除批量合成：对合成的 id 发送 DELETE 请求
+
+
+
+
+
+## Speech Translation
+
+### Notes
+
++ 本质是 STT + translator，很久以前的曾经是单独的功能
+
+
+
+## Speech Python SDK
+
+### Notes
+
++ 似乎实质上是在调用 C 语言的底层代码？
++ 有很多异步操作，但并不是以 python 的方式实现的，因此会需要自行实现类似 await 的机制
+
+
+
+### 设置
+
+#### SpeechConfig
+
+```python
+SpeechConfig(
+    subscription: str | None = None, 
+    region: str | None = None, 
+    endpoint: str | None = None, 
+    host: str | None = None, 
+    auth_token: str | None = None, 
+    speech_recognition_language: str | None = None
+)
+```
+
++ 主要用于设置认证信息，也可以对具体服务进行一些设置
++ 对象构造
+  + 可以有 4 种初始化方式
+    1. 从 subscription：使用 `subscription` 和 `region`
+    2. 从 endpoint：使用 `endpoint`，此时 `subscription` 和 `auth_token` 可选
+       + 通常用于使用训练好的自定义模型，在这里给定模型的 endpoint
+    3. 从 host：使用 `host`，此时 `subscription` 和 `auth_token` 可选
+    4. 从 token：使用 `auth_token` 和 `region`
+  + 可以在这里设置 `speech_recognition_language` 来指定识别器的语言
++ 常用属性
+  + speech_recognition_language：指定 STT 时的语言
+  + speech_synthesis_voice_name：指定 TTS 时使用的声音
+  + endpoint_id：指定要使用的 CNV 模型
+
+
+
+#### audio.AudioConfig
+
+```python
+AudioConfig(
+    use_default_microphone: bool = False, 
+    filename: str = None, 
+    stream: AudioInputStream = None, 
+    device_name: str = None
+)
+```
+
++ 音频输入设置，用于 STT 和 Speech Translation
++ 对象构造
+  + `use_default_microphone`：是否使用默认系统麦克风进行音频输入
+  + `device_name`：指定要使用的音频设备的 ID
+  + `filename`：指定音频输入文件
+    + 文件不能太大？以及仅支持 wav 和 pcm？
+  + `stream`：指定使用的输入流，为 `AudioInputStream` 对象
+    + 原生只支持构建 pcm，其他格式需要依赖 gstreamer 软件来构建，有点难用
+
+
+
+### 调用服务
+
+#### SpeechRecognizer
+
+```python
+SpeechRecognizer(
+    speech_config: SpeechConfig, 
+    audio_config: AudioConfig = None, 
+    language: str = None, 
+    source_language_config: SourceLanguageConfig = None, 
+    auto_detect_source_language_config: AutoDetectSourceLanguageConfig = None
+)
+```
+
++ 识别器，用于 STT
++ 对象构造
+  + 仅 `speech_config` 为必须参数
+  + 语言相关的参数请三选一
+    + `language`：手动指定语言，仅指定语言
+    + `source_language_config`：手动指定语言，但同时可以指定 endpoint
+    + `auto_detect_source_language_config`：自动判断
+
++ 常用方法
+  + 注意点
+    + 以下方法都有 `<function_name>_async()` 的异步版本，返回 `ResultFuture` 对象
+    + 用 `start_<suffix>()` 开始识别后，用对应的 `stop_<suffix>()` 来停止识别
+    + 识别结果为 `SpeechRecognitionResult` 对象
+  + `recognize_once()`：仅识别一次，根据静音 / 超时（15s）来判断结束
+  + `start_continuous_recognition()`：开始连续识别
+    + 产生的识别信号由对应的 EventSignal 对象属性接收
+    + 需要用 `connect()` 方法为识别器的 EventSignal 对象属性设置回调函数，以处理识别结果
+  + `stop_continuous_recognition()`：停止连续识别
+  + `start_keyword_recognition(model)`：调用 keyword 模型识别，此时识别器在传入 keyword 后开始识别
++ 关于连续识别
+  + 需要为 SpeechRecognizer 的各种 EventSignal 类的属性设置回调函数来处理事件信号
+    + session_started, session_stopped
+    + speech_start_detected, speech_end_detected,
+      + 很奇怪地，start 后马上就会接收到 end
+    + recognizing, recognized
+      + 基本上识别完一句后，会产生一个 recognized 信号
+    + canceled
+  + 调用 `stop_continuous_recognition()` 后的表现
+    1. 将当前识别的句子识别完，产生 recognized 信号
+    2. 关闭当前会话，产生 session_stopped
+
+
+
+### 事件信号
+
+#### EventSignal
+
++ 接收并处理事件信号，通常作为 SpeechRecognizer 的属性存在
++ 常用方法
+  + `connect()`：将事件信号与回调函数连接
+    + 注意同一个信号可以连接多个回调函数，调用的顺序与连接时的顺序一致
+
+
+
+#### RecognitionEventArgs：事件信号
+
++ recognizing
++ 属性：session_id、offset、result（`SpeechRecognitionResult` 对象）
+
+
+
+#### SpeechRecognitionResult：识别结果
+
+
+
+
+

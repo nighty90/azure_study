@@ -43,3 +43,18 @@ ApiKey={API_KEY}
 + 断网使用 container
   + 需要设置 license 相关的参数，且需要申请权限并购买对应承诺层，否则无法下载 / 更新 license
   + 不能完全断网，例如下载及更新 license 的时候需要联网
+
+
+
+## APIM
+
++ 本质是反向代理，由它接收客户的请求并转发到对应的服务器
++ 可以记录流量等信息
++ 结构
+  + client -> SLB -> APIM 实例 -> 后端
++ 概念
+  + API：有唯一的 URL，
+  + operation：对应一个 http 请求，有唯一的 url suffix，即 operation id
+  + capacity：指示 APIM 实例的工作负载，是 CPU、内存、网络队列长度等信息的综合指标
++ kusto
+  + database: ProxyRequest
