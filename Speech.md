@@ -657,9 +657,10 @@ SpeechRecognizer(
     + recognizing, recognized
       + 基本上识别完一句后，会产生一个 recognized 信号
     + canceled
+      + 音频文件读到头、中途被打断等情况下会产生的
   + 调用 `stop_continuous_recognition()` 后的表现
-    1. 将当前识别的句子识别完，产生 recognized 信号
-    2. 关闭当前会话，产生 session_stopped
+    1. 至少会将当前识别的句子识别完，再产生 recognized 信号？
+    2. recognized 之后再关闭当前会话，产生 session_stopped？
 
 
 

@@ -27,6 +27,8 @@
 
 ### Tutorial: Build a Custom Search web page
 
+Protal：[Bing Custom Search](https://www.customsearch.ai/applications)
+
 + Search Experience：核心部分，设置搜索范围
   + 网络切片概念
     + domain：域
@@ -40,9 +42,9 @@
       + 例子：https://www.microsoft.com/en-us/p/surface-earbuds/8r9cpq146064?activetab=pivot%3aoverviewtab
       + bing 将仅搜索该网页本身，可以指定是否要包含子页面
   + 范围设置
-    + Active：要搜索的切片
+    + Active：要搜索的切片，即白名单
       + 可以设置 rank 为 super boost / boost / demote 来控制结果排名
-    + Blocked：不搜索的切片
+    + Blocked：不搜索的切片，即黑名单
     + Pinned：如果用户输入的搜索内容匹配到 query，则需要置顶的切片
       + 匹配方式：精确、以 query 开头、以 query 结尾、包含 query
       + 不适用于图像和视频搜索
