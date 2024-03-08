@@ -13,10 +13,34 @@
 
 ## Authentication
 
-+ 一般将 key 在 headers 中设为 `Ocp-Apim-Subscription-Key`
-+ 有些服务可以申请临时的 token，在 headers 中设为 `Authorization`
-  + 比如 speech
-+ AOAI 的 key 在 headers 里设为 `api-key` 
+[Authentication in Azure AI services - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/authentication)
+
+所有服务在调用时都需要认证，主要有三种认证方式
+
++ 使用 resource key：在 headers 中设置 `Ocp-Apim-Subscription-Key: <key>`
+
+  + 注意 AOAI 的 key 是在 headers 里设为 `api-key` 
+  + 对于 multi 资源，需要注意地区设置
+    + 对于大多数服务，向特定地区发送请求，URL 为 `<region>.api.cognitive.microsoft.com`
+    + 对于 Translator，需要在 headers 中设置 `Ocp-Apim-Subscription-Region: <region>`
+
++ 使用 access token：在 headers 中设置 `Authorization：Bearer <token>`
+
+  + 目前仅用于 3 个 API： Translator 的 Text Translation、Speech 的 STT 和 TTS
+
+    + 未来可能变化，尽量参考具体服务的文档
+
+  + 申请 token：每个 token 的有效期为 10min，考虑到网络延迟等，建议同一 token 仅使用 9min
+
+    ```bash
+    curl -v -X POST \
+    "https://YOUR-REGION.api.cognitive.microsoft.com/sts/v1.0/issueToken" \
+    -H "Content-type: application/x-www-form-urlencoded" \
+    -H "Content-length: 0" \
+    -H "Ocp-Apim-Subscription-Key: YOUR_SUBSCRIPTION_KEY"
+    ```
+
++ 使用 Microsoft Entra ID：需要与 custom subdomain 一起使用，很罕见
 
 
 

@@ -2,7 +2,7 @@
 
 [Azure OpenAI Service - Documentation, quickstarts, API reference - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
 
-## Notes
+## General notes
 
 + 注意实际输入给 GPT 模型的 prompt 是包含一定量的上下文的
 + `max_token` 指示了向模型申请的计算资源的大小，因此是计费的依据
@@ -15,14 +15,39 @@
 + 注意与其他资源不同，调用时 key 在 headers 里设为 `api-key` 
 + dalle 相关
   + 曾经能设置 seed，后来砍了
-  + openai 那边，dalle2 能用 variation 和 edit，但 AOAI 这边都部署不了 dalle2
+  + openai 那边，dalle2 能用 variation 和 edit，但 AOAI 这边都部署不了 dalle2？
   + 能减少改写的咒语：`I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:`
   + 有版权相关（或者单纯有名有姓？）的词时基本都会被改写，不改写的话容易触发 content filter
 + gpt4v 相关
   + 注意修改 system prompt，让它辅助图像，否则它会说帮不了 / 没这能力之类的
++ 每个 subscription 能创建的 AOAI 资源数有限
+  + 申请表：[Azure OpenAI Service: Request for Resource Increase (microsoft.com)](https://customervoice.microsoft.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR4xPXO648sJKt4GoXAed-0pUN05FTFMzOTBMTFg1TzZJR01RSzdOU0M5MyQlQCN0PWcu)
 
 
 
+## Prompts
+
+Computer Expert
+
+Assistant is a computer engineer who answers user's questions related to computer.
+
+ 
+
+Grammar Checker
+
+Assistant is an English teacher who check the grammar errors or ambiguities in user's input. If there aren't any of these, you should praise the user and explain the meaning of the input. If the text can still be improved, please provide an improved version. Your answer should be in English, but the explanation of input should be in Chinese.
+
+ 
+
+English Expert
+
+Assistant is an English teacher who answers user's question about English. The user will ask in Chinese and you should answer in Chinese as well. However, if the user ask about how to express something, the expression in your answer should be in English while other parts are still in Chinese.
+
+ 
+
+Arabic Expert
+
+Assistant is an Arabic teacher who answers user's question about Arabic.
 
 
 
@@ -46,6 +71,8 @@
 ### Key concepts
 
 + Prompts 与 completions
+  + prompt 为模型输入，completion 为模型输出
+
 + Tokens：Azure OpenAI 将文本分割为 token 来处理
   + 可以是完整的单词，但通常仅是字符块（比如一个音节）
   + 处理的 token 总数取决于 [ 输入、输出、请求参数 ] 的长度
@@ -130,36 +157,6 @@
 
 
 ## REST API
-
-### Authentication
-
-将 API Key 或 Microsoft Entra token 设置到 HTTP header 中
-
-+ 通过 API Key：设置 `api-key` 参数
-
-+ 通过 Microsoft Entra token
-
-  ```bash
-  # 保存 user 信息
-  export user=$(az account show --query "user.name" -o tsv)
-  
-  # 将自己的角色设置为 Cognitive Services User
-  # assignment 需要约 5min 生效
-  export resourceId=$(az group show -g $RG --query "id" -o tsv)
-  az role assignment create --role "Cognitive Services User" --assignee $user --scope $resourceId
-  
-  # 请求 Microsoft Entra token 
-  # 注意 1h 后过期，之后需要再次请求
-  export accessToken=$(az account get-access-token --resource https://cognitiveservices.azure.com --query "accessToken" -o tsv)
-  
-  # 调用 API
-  curl $AZURE_OPENAI_ENDPOINT/openai/deployments/$DEPLOYMENT_NAME/completions?api-version=2023-05-15 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $accessToken" \  # 在这里包含，注意有固定前缀
-  -d '{ "prompt": "Once upon a time" }'
-  ```
-
-
 
 ### Chat completions
 

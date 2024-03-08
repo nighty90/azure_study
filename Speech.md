@@ -36,57 +36,34 @@ POST https://<REGION>.stt.speech.microsoft.com/speech/recognition/conversation/c
 
 ##### Headers
 
-+ `Ocp-Apim-Subscription-Key`：必须，key，与 `Authorization` 二选一即可
-
-+ `Authorization`：必须，带上 "Bearer" 前缀的 token，与 `Ocp-Apim-Subscription-Key` 二选一即可
-
++ 认证信息：`Ocp-Apim-Subscription-Key` 与 `Authorization` 二选一，详见 Azure General 笔记
 + `Content-type`：必须，提供的音频格式及编解码器；SDK 支持的格式更多
   + WAV 格式：audio/wav; codecs=audio/pcm; samplerate=16000
   + OGG 格式：audio/ogg; codecs=opus
-  
 + `Pronunciation-Assessment`：指定如何评估发音，是 Base64 编码的 JSON 格式文本
   + `ReferenceText`：必须，参考文本
-  
+
   + `GradingSystem`：分数规格，可选 FivePoint / HundredMark
-  
+
   + `Granularity`：评估粒度，可选 Phoneme / Word / FullText
-  
+
     + Phoneme 给出全文、单词、音素的得分，而 FullText 只给出全文得分
-  
+
   + `Dimension`：输出内容，可选 Basic / Comprehensive
-  
+
   + `EnableMiscue`：启用误读计算，布尔值，默认为 False
-  
+
   + `ScenarioId`：GUID，表示自定义分数系统
-  
-+ `Transfer-Encoding`：指定要发送的数据分块，仅当要分块时使用
 
-  + 必须与 `Expect` 同用
++ 分块传输：需要同时设置 `Transfer-Encoding` 和 `Expect`
   + 建议使用分块传输，能减小延迟
-
-+ `Expect`：分块传输时需启用，SS 将确认初始请求并等待附加的数据
-
-  + 值固定，为 Expect: 100-continue
+  + `Transfer-Encoding`：指定要发送的数据分块
+  + `Expect`：分块传输时需启用，Speech 将确认初始请求并等待附加的数据
+    + 值固定，为 Expect: 100-continue
 
 + `Accept`：SS 返回的结果格式，必须是 application/json
 
   + 为避免某些框架默认的该项参数不正确，尽量手动设置一下
-
-
-
-#### 申请 token
-
-每个 token 的有效期为 10min，考虑到网络延迟等，建议同一 token 仅使用 9min
-
-```http
-POST https://<REGION>.api.cognitive.microsoft.com/sts/v1.0/issueToken
-```
-
-##### headers
-
-+ `Ocp-Apim-Subscription-Key`：<YOUR_SUBSCRIPTION_KEY>
-+ `Content-type`：application/x-www-form-urlencoded
-+ `Content-Length`：0
 
 
 
@@ -560,6 +537,8 @@ elif result.reason == speechsdk.ResultReason.Canceled:
 
 + 似乎实质上是在调用 C 语言的底层代码？
 + 有很多异步操作，但并不是以 python 的方式实现的，因此会需要自行实现类似 await 的机制
+  + 比如设置变量作为死循环的停止信号，并在回调函数中改变该信号
+
 
 
 

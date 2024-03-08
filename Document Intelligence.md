@@ -1,6 +1,8 @@
 # Document Intelligence
 
-[Document Intelligence documentation - Quickstarts, Tutorials, API Reference - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/?view=doc-intel-4.0.0)
+文档：[Document Intelligence documentation - Quickstarts, Tutorials, API Reference - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/?view=doc-intel-4.0.0)
+
+示例数据：[azure-sdk-for-python/sdk/formrecognizer/azure-ai-formrecognizer/samples at azure-ai-formrecognizer_3.3.2 · Azure/azure-sdk-for-python · GitHub](https://github.com/Azure/azure-sdk-for-python/tree/azure-ai-formrecognizer_3.3.2/sdk/formrecognizer/azure-ai-formrecognizer/samples)
 
 
 
@@ -9,13 +11,6 @@
 + 曾用名为 Azure Form Recognizer，以下简称为 FR
 + 有诸多版本，注意对照文档查看
 + 注意客户很可能仍使用 FR 来称呼该服务
-+ 在 Document Intelligence studio 里创建自定义模型时，上传文件的注意点
-  + 可以事先上传到 container 里，也可以之后直接在 studio 里上传
-  + 如果直接在 studio 里上传，会传到设置的路径里
-  + 如果已经上传，应该将路径设置到对应的文件夹里
-  + 如果要创建分类模型，可以创建子目录来放置各类别的样本，studio 将自动据此打标签
-  + 理论上，对于分类模型，还应该提供文件对应的布局信息（运行 Layout 获得）
-  + 不过实际上对于没有布局信息的文件，studio 也会自动分析并生成
 
 
 
@@ -41,35 +36,51 @@
 
 ## 自定义模型
 
-+ 训练集需要上传至 storage
+### Notes
+
++ 训练集需要存储在 storage account 里
 
   + 注意允许匿名访问 container
   + 需要配置 CORS，允许 FR 的操作
 
-+ 例子：Studio 训练自定义提取模型
+  + 可以事先上传到 container 里，也可以创建 project 之后直接在 studio 里上传
+    + 注意路径默认从 container 的子文件夹开始，不要以 "/" 开头，不需要路径已存在
+    + 如果直接在 studio 里上传，会传到设置的 container 下的路径里
+    + 如果已经上传，应该将路径设置到对应的文件夹里
+  + 对于分类模型
+    + 如果要创建分类模型，可以创建子目录来放置各类别的样本，studio 将自动据此打标签
+    + 理论上，对于分类模型，还应该提供文件对应的布局信息（运行 Layout 获得）
+    + 不过实际上对于没有布局信息的文件，studio 也会自动分析并生成
 
-  1. Custom extraction model，创建新 project
-     + 配置 subscription、resource 和 storage container
-  2. 对 sample 文档打标签，至少要 5 篇文档
-     + 如果是与预建模型能处理的文档类型相近的，可以尝试 auto label 先自动打标签
-     + 或者可以使用 Layout 自动检测布局并绘制区域，再手动打标签
-     + 如果 Layout 检测不准确，可以再手动绘制区域，但注意需要先运行过 Layout
-  3. 点击 Train，设置模型名称和底模，训练模型，会自动跳转至 model 页面
-     + 底模可选 neural / template，推荐使用 neural
-  4. 训练完成后可以切换到 test 页面查看模型效果
 
-+ 打标签为表格
 
-  1. 手动在右侧边栏添加 Table 类型的标签，选择表格类型（Dynamic / Fixed），起名
-     + 动态表格：行数不定，列固定，通常没有行名
-     + 固定表格：行列固定，通常行名列名都有，即交叉表的形式
-  2. 按需求增加行 / 列
-  3. 选择文档中的文本填入每一格
+### 训练自定义提取模型
 
-+ 打标签为签名
++ 总体步骤
+  + 选择 Custom extraction model，创建新 project
+    + 配置 subscription、resource 和 storage container
+  + 对 sample 文档打标签，至少要 5 篇文档
+    + 如果是与预建模型能处理的文档类型相近的，可以尝试 auto label 先自动打标签
+    + 通常直接使用 Layout 自动检测布局并绘制区域，再手动打标签
+    + 如果 Layout 检测不准确，可以再手动绘制区域，但注意需要先运行过 Layout
+  + 点击 Train，设置模型名称和底模，训练模型，会自动跳转至 model 页面
+    + 底模可选 neural / template，推荐使用 neural
+  + 训练完成后可以切换到 test 页面查看模型效果
++ 关于打标签
+  + 
+  + 打标签为表格
 
-  + 签名区域常为留白，检测不到，需要手动绘制区域捕捉
-  + 注意如果需要提取签名，底模只能选择 template 模型，neural 模型会无视签名区域
+    1. 手动在右侧边栏添加 Table 类型的标签，选择表格类型（Dynamic / Fixed），起名
+       + 动态表格：行数不定，列固定，通常没有行名
+       + 固定表格：行列固定，通常行名列名都有，即交叉表的形式
+    2. 按需求增加行 / 列
+    3. 选择文档中的文本填入每一格
+  + 打标签为签名
+
+    + 签名区域常为留白，检测不到，需要手动绘制区域捕捉
+    + 注意 neural 模型不支持 Signature 类型的标签
+
+
 
 
 
