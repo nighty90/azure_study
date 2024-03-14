@@ -82,3 +82,10 @@ ApiKey={API_KEY}
   + capacity：指示 APIM 实例的工作负载，是 CPU、内存、网络队列长度等信息的综合指标
 + kusto
   + database: ProxyRequest
+
+
+
+## Cost Analysis
+
++ 一般到了第二天再显示前一天的计费，可以和客户说有 24 小时以上的延迟
++ 注意有些服务新订阅是有 12 个月的免费额度的

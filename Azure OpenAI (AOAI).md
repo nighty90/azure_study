@@ -5,23 +5,28 @@
 ## General notes
 
 + 注意实际输入给 GPT 模型的 prompt 是包含一定量的上下文的
-+ `max_token` 指示了向模型申请的计算资源的大小，因此是计费的依据
++ `max_token` 指示了向模型申请的计算资源的大小
   + 具体模型的限制见文档
 + embedding 模型输出的维度为 1536
   + 好像有新的 embedding 模型了，还没试
-
 + 关于 GPT-4 的地区支持性，注意部分列出的地区仅能使用已创建的 GPT-4 部署
   + 无法新建也无法编辑
 + 注意与其他资源不同，调用时 key 在 headers 里设为 `api-key` 
 + dalle 相关
   + 曾经能设置 seed，后来砍了
-  + openai 那边，dalle2 能用 variation 和 edit，但 AOAI 这边都部署不了 dalle2？
+  + openai 那边，dalle2 能用 variation 和 edit
+  + AOAI 这边只能在 East US 使用 dalle2，注意不需要部署
   + 能减少改写的咒语：`I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:`
-  + 有版权相关（或者单纯有名有姓？）的词时基本都会被改写，不改写的话容易触发 content filter
+  + 有版权相关（或者单纯有名有姓？）的词时似乎都会被改写，不改写的话容易触发 content filter
 + gpt4v 相关
   + 注意修改 system prompt，让它辅助图像，否则它会说帮不了 / 没这能力之类的
 + 每个 subscription 能创建的 AOAI 资源数有限
   + 申请表：[Azure OpenAI Service: Request for Resource Increase (microsoft.com)](https://customervoice.microsoft.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR4xPXO648sJKt4GoXAed-0pUN05FTFMzOTBMTFg1TzZJR01RSzdOU0M5MyQlQCN0PWcu)
++ 关于 latency
+  + 我们仅保证 stream 模式下首字返回时间在 60s 内
+  + `max_token` 会影响模型速度，一般越小越快 <- TSG 有这个说法，但本质是通过限制输出文本量达到的，没意义
+  + 可以查看 latency
+
 
 
 

@@ -9,6 +9,7 @@
   + 对请求体中需要 translator 翻译的正文进行计数
     + 对于 Translate / Transliterate / Dictionary Lookup 为 `Text`
     + 对于 Dictionary Examples 为 `Text` 和 `Translation`
+    + 注意是对输入计数，与响应的长度无关，即使是同时译作多语言
   + 每个 Unicode 码位计为一个字符，注意有些语言的字符会占多个码位
   + 正文的所有字符都会计数，包括 XML 标记等
   + 每次翻译独立计数，一次同时译为多语言也算作一次翻译
